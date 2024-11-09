@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ibadah_v2/screens/home.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 
