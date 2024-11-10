@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:ibadah_v2/services/notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
 
 class SalahTimes {
@@ -89,11 +90,9 @@ class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
       final String? savedData = prefs.getString('salahTimes');
 
       if (savedData != null) {
-        // Load data from local storage
         final data = jsonDecode(savedData);
         state = AsyncValue.data(SalahTimes.fromJson(data));
       } else {
-        // Fetch prayer times if no saved data found
         await fetchAndSavePrayerTimes();
       }
     } catch (e, st) {
@@ -103,70 +102,91 @@ class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
 
   Future<void> fetchAndSavePrayerTimes() async {
     try {
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0,
-        ),
-      );
+      if (await _requestLocationPermission()) {
+        Position position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0,
+          ),
+        );
 
-      final location = tz.getLocation('Asia/Dhaka');
-      DateTime date = tz.TZDateTime.from(DateTime.now(), location);
-      Coordinates coordinates =
-          Coordinates(position.latitude, position.longitude);
-      CalculationParameters params = CalculationMethod.muslimWorldLeague();
-      params.madhab = Madhab.shafi;
+        final location = tz.getLocation('Asia/Dhaka');
+        DateTime date = tz.TZDateTime.from(DateTime.now(), location);
+        Coordinates coordinates =
+            Coordinates(position.latitude, position.longitude);
+        CalculationParameters params = CalculationMethod.muslimWorldLeague();
+        params.madhab = Madhab.shafi;
 
-      final prayerTimes = PrayerTimes(
-        coordinates: coordinates,
-        date: date,
-        calculationParameters: params,
-      );
-      final sunnahTimes = SunnahTimes(prayerTimes);
+        final prayerTimes = PrayerTimes(
+          coordinates: coordinates,
+          date: date,
+          calculationParameters: params,
+        );
+        final sunnahTimes = SunnahTimes(prayerTimes);
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      String place =
-          '${placemarks.first.locality},  ${placemarks.first.country}';
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        String place =
+            '${placemarks.first.locality},  ${placemarks.first.country}';
 
-      final format = DateFormat.jm();
-      double qiblaDirection = await _getQiblaDirection(position);
+        final format = DateFormat.jm();
+        double qiblaDirection = await _getQiblaDirection(position);
 
-      final salahTimes = SalahTimes(
-        fajr: format
-            .format(tz.TZDateTime.from(prayerTimes.fajr!, location))
-            .toString(),
-        sunrise: format
-            .format(tz.TZDateTime.from(prayerTimes.sunrise!, location))
-            .toString(),
-        dhuhr: format
-            .format(tz.TZDateTime.from(prayerTimes.dhuhr!, location))
-            .toString(),
-        asr: format
-            .format(tz.TZDateTime.from(prayerTimes.asr!, location))
-            .toString(),
-        maghrib: format
-            .format(tz.TZDateTime.from(prayerTimes.maghrib!, location))
-            .toString(),
-        isha: format
-            .format(tz.TZDateTime.from(prayerTimes.isha!, location))
-            .toString(),
-        qiyam: format
-            .format(
-                tz.TZDateTime.from(sunnahTimes.lastThirdOfTheNight, location))
-            .toString(),
-        location: place,
-        date: DateTime.now(),
-        qiblaDirection: qiblaDirection,
-      );
+        final salahTimes = SalahTimes(
+          fajr: format
+              .format(tz.TZDateTime.from(prayerTimes.fajr!, location))
+              .toString(),
+          sunrise: format
+              .format(tz.TZDateTime.from(prayerTimes.sunrise!, location))
+              .toString(),
+          dhuhr: format
+              .format(tz.TZDateTime.from(prayerTimes.dhuhr!, location))
+              .toString(),
+          asr: format
+              .format(tz.TZDateTime.from(prayerTimes.asr!, location))
+              .toString(),
+          maghrib: format
+              .format(tz.TZDateTime.from(prayerTimes.maghrib!, location))
+              .toString(),
+          isha: format
+              .format(tz.TZDateTime.from(prayerTimes.isha!, location))
+              .toString(),
+          qiyam: format
+              .format(
+                  tz.TZDateTime.from(sunnahTimes.lastThirdOfTheNight, location))
+              .toString(),
+          location: place,
+          date: DateTime.now(),
+          qiblaDirection: qiblaDirection,
+        );
 
-      state = AsyncValue.data(salahTimes);
-      saveToLocalStorage(salahTimes); // Save data to local storage
+        state = AsyncValue.data(salahTimes);
+        saveToLocalStorage(salahTimes);
+
+        await _scheduleNotifications(salahTimes);
+      } else {
+        state =
+            AsyncValue.error("Location permission denied.", StackTrace.current);
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  Future<void> _scheduleNotifications(SalahTimes salahTimes) async {
+    // Map prayer times to a Map<String, String> as required by NotificationService
+    final Map<String, String> prayerTimesMap = {
+      'Fajr': salahTimes.fajr,
+      'Sunrise': salahTimes.sunrise,
+      'Dhuhr': salahTimes.dhuhr,
+      'Asr': salahTimes.asr,
+      'Maghrib': salahTimes.maghrib,
+      'Isha': salahTimes.isha,
+    };
+
+    await _notificationService.schedulePrayerNotifications(prayerTimesMap);
   }
 
   Future<void> saveToLocalStorage(SalahTimes data) async {
@@ -181,6 +201,14 @@ class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
 
     var qibla = Qibla.qibla(userCoordinates);
     return qibla;
+  }
+
+  Future<bool> _requestLocationPermission() async {
+    var status = await Permission.location.status;
+    if (status.isDenied) {
+      status = await Permission.location.request();
+    }
+    return status.isGranted;
   }
 }
 

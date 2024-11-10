@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ibadah_v2/screens/home.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ibadah_v2/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(const ProviderScope(child: MyApp()));
 }
 
