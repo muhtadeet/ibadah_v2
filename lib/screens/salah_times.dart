@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ibadah_v2/models/salah_times_provider.dart';
-// import 'package:intl/intl.dart';
 
 class SalahTimesPage extends ConsumerStatefulWidget {
   const SalahTimesPage({super.key});
@@ -33,7 +32,7 @@ class _SalahTimesPageState extends ConsumerState<SalahTimesPage> {
           'Salah Times',
           style: TextStyle(
             fontSize: 24,
-            color: colorScheme.onPrimaryContainer,
+            color: colorScheme.primaryFixedDim,
           ),
         ),
         titleSpacing: 25,
@@ -50,7 +49,7 @@ class _SalahTimesPageState extends ConsumerState<SalahTimesPage> {
                   Text(
                     'Today',
                     style: TextStyle(
-                        color: colorScheme.onTertiaryContainer,
+                        color: colorScheme.tertiary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold),
                   ),
@@ -180,48 +179,63 @@ class _SalahTimesPageState extends ConsumerState<SalahTimesPage> {
                 height: 40,
               ),
               IntrinsicHeight(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        const Text(
-                          'Sunrise',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Text(
-                          salahTimes.sunrise,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
+                  child: Card(
+                    elevation: 5,
+                    color: colorScheme.surfaceBright,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    VerticalDivider(
-                      color: colorScheme.onSurface,
-                      indent: 10,
-                      endIndent: 10,
-                      thickness: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                'Sunrise',
+                                style: TextStyle(
+                                    fontSize: 14, color: colorScheme.tertiary),
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                salahTimes.sunrise,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ],
+                          ),
+                          VerticalDivider(
+                            color: colorScheme.onSurface,
+                            indent: 10,
+                            endIndent: 10,
+                            thickness: 1,
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                'Sunset',
+                                style: TextStyle(
+                                    fontSize: 14, color: colorScheme.tertiary),
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                salahTimes.maghrib,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    Column(
-                      children: [
-                        const Text(
-                          'Sunset',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Text(
-                          salahTimes.maghrib,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              )
+              ),
             ],
           );
         },

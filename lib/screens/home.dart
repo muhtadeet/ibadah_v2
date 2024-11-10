@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ibadah_v2/screens/settings_page.dart';
 import 'home_screen.dart';
 import 'salah_times.dart';
 
@@ -14,6 +15,7 @@ class _HomeState extends State<Home> {
   final List<Widget> _pages = [
     const HomeScreen(),
     const SalahTimesPage(),
+    const SettingsPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -28,6 +30,8 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        enableFeedback: true,
+        backgroundColor: colorScheme.onSecondaryFixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -36,6 +40,10 @@ class _HomeState extends State<Home> {
           BottomNavigationBarItem(
             icon: Icon(Icons.timer),
             label: 'Salah Times',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -48,8 +56,8 @@ class _HomeState extends State<Home> {
         unselectedIconTheme: const IconThemeData(
           size: 24,
         ),
-        selectedItemColor: colorScheme.tertiary,
-        unselectedItemColor: colorScheme.secondary,
+        selectedItemColor: colorScheme.primaryFixedDim,
+        unselectedItemColor: colorScheme.tertiary,
         elevation: 8,
       ),
     );

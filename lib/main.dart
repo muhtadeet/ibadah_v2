@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ibadah_v2/screens/home.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ibadah_v2/models/theme_provider.dart';
+import 'package:ibadah_v2/screens/home.dart';
 import 'package:ibadah_v2/services/notification_service.dart';
 
 void main() async {
@@ -10,26 +11,34 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorSchemeSeed = ref.watch(colorProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode == ThemeModeOption.light
+          ? ThemeMode.light
+          : themeMode == ThemeModeOption.dark
+              ? ThemeMode.dark
+              : ThemeMode.system,
       theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: Theme.of(context).colorScheme.primary),
-          useMaterial3: true,
-          fontFamily: GoogleFonts.reemKufi().fontFamily),
+        colorScheme: ColorScheme.fromSeed(seedColor: colorSchemeSeed),
+        useMaterial3: true,
+        fontFamily: GoogleFonts.reemKufi().fontFamily,
+      ),
       darkTheme: ThemeData(
-          useMaterial3: true,
-          fontFamily: GoogleFonts.reemKufi().fontFamily,
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: Theme.of(context).colorScheme.primary,
-              brightness: Brightness.dark)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: colorSchemeSeed,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        fontFamily: GoogleFonts.reemKufi().fontFamily,
+      ),
       home: const Home(),
     );
   }

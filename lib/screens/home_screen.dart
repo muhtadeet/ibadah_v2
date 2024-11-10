@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:ibadah_v2/models/salah_times_provider.dart';
+import 'package:ibadah_v2/widgets/hadith_card.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -92,7 +93,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    return '${hours.toString().padLeft(2, '0')}         |         ${minutes.toString().padLeft(2, '0')}';
+    final seconds = duration.inSeconds.remainder(60);
+    return '${hours.toString().padLeft(2, '0')}         -         ${minutes.toString().padLeft(2, '0')}         -         ${seconds.toString().padLeft(2, '0')}';
   }
 
   void _updateCountdown(int data) {
@@ -129,7 +131,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final ishaTime = timeToSeconds(salahTimes.isha);
       final qiyamTime = timeToSeconds(salahTimes.qiyam);
 
-      if (currentSeconds < fajrTime || currentSeconds > ishaTime) {
+      if (currentSeconds < fajrTime && currentSeconds >= qiyamTime) {
         currentSalahName = 'Qiyam';
         upcomingSalahName = 'Fajr';
         upcomingSalahTime = salahTimes.fajr;
@@ -138,7 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         upcomingSalahName = 'Sunrise';
         upcomingSalahTime = salahTimes.sunrise;
       } else if (currentSeconds >= sunriseTime && currentSeconds < dhuhrTime) {
-        currentSalahName = 'Sunrise';
+        currentSalahName = 'A Fresh Start';
         upcomingSalahName = 'Dhuhr';
         upcomingSalahTime = salahTimes.dhuhr;
       } else if (currentSeconds >= dhuhrTime && currentSeconds < asrTime) {
@@ -166,13 +168,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: colorScheme.onSecondary,
       appBar: AppBar(
+        elevation: 5,
+        forceMaterialTransparency: true,
+        shadowColor: colorScheme.surfaceContainer,
         toolbarHeight: 80,
         backgroundColor: colorScheme.onSecondary,
         title: Text(
           'Ibadah',
           style: TextStyle(
             fontSize: 24,
-            color: colorScheme.onPrimaryContainer,
+            color: colorScheme.primaryFixedDim,
           ),
         ),
         titleSpacing: 25,
@@ -211,7 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           "${today.longMonthName}    ${today.hDay},    ${today.hYear} AH",
                           style: TextStyle(
                             fontSize: 14,
-                            color: colorScheme.onPrimaryContainer,
+                            color: colorScheme.primaryFixed,
                           ),
                         ),
                       ],
@@ -240,58 +245,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: salahTimesAsync.when(
         data: (salahTimes) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(children: [
-                const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  'Time for',
-                  style: TextStyle(
-                    fontSize: 16,
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                // Changed from Row to Column
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Time for',
+                    style: TextStyle(fontSize: 16),
                   ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  currentSalahName,
-                  style: TextStyle(
-                    color: colorScheme.tertiary,
-                    fontSize: 42,
+                  const SizedBox(height: 20),
+                  Text(
+                    currentSalahName,
+                    style: TextStyle(
+                      color: colorScheme.tertiary,
+                      fontSize: 42,
+                    ),
                   ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  'Next up is $upcomingSalahName at $upcomingSalahTime',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  const SizedBox(height: 20),
+                  Text(
+                    'Next up is $upcomingSalahName at $upcomingSalahTime',
+                    style: const TextStyle(fontSize: 16),
                   ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  'After',
-                  style: TextStyle(color: colorScheme.secondary, fontSize: 18),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  countdownText,
-                  style: const TextStyle(fontSize: 18),
-                ),
-                Text(
-                  'Hours                               Mins  ',
-                  style: TextStyle(fontSize: 10, color: colorScheme.tertiary),
-                ),
-              ]),
-            ],
+                  const SizedBox(height: 20),
+                  Text(
+                    'After',
+                    style: TextStyle(
+                      color: colorScheme.primaryFixed,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    countdownText,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  Text(
+                    'Hours                               Mins                                Secs',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.tertiary,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 50),
+                    child: Divider(
+                      color: colorScheme.primary.withOpacity(0.2),
+                      indent: 85,
+                      endIndent: 85,
+                      height: 0,
+                      thickness: 1,
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 50,
+                    ),
+                    child: HadithCard(key: Key('dailyHadithCard')),
+                  ),
+                ],
+              ),
+            ),
           );
         },
         loading: () {

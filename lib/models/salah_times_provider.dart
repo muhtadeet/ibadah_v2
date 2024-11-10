@@ -4,12 +4,14 @@ import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:ibadah_v2/services/notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 class SalahTimes {
   final String fajr;
@@ -69,6 +71,7 @@ class SalahTimes {
 
 class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
   final NotificationService _notificationService = NotificationService();
+  final logger = Logger();
 
   SalahTimesNotifier() : super(const AsyncValue.loading()) {
     _initTimezone();
@@ -184,9 +187,16 @@ class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
       'Asr': salahTimes.asr,
       'Maghrib': salahTimes.maghrib,
       'Isha': salahTimes.isha,
+      'Qiyam': salahTimes.qiyam,
     };
 
-    await _notificationService.schedulePrayerNotifications(prayerTimesMap);
+    try {
+      // Schedule prayer notifications
+      await _notificationService.schedulePrayerNotifications(prayerTimesMap);
+    } catch (e) {
+      // Log the error if scheduling fails
+      logger.e("Error scheduling prayer notifications: $e");
+    }
   }
 
   Future<void> saveToLocalStorage(SalahTimes data) async {
@@ -210,6 +220,58 @@ class SalahTimesNotifier extends StateNotifier<AsyncValue<SalahTimes>> {
     }
     return status.isGranted;
   }
+}
+
+Future<String> fetchHadith() async {
+  final prefs = await SharedPreferences.getInstance();
+  final currentDate = DateTime.now()
+      .toIso8601String()
+      .substring(0, 10); // Format date as YYYY-MM-DD
+
+  // Retrieve cached hadith and date from SharedPreferences
+  final cachedHadith = prefs.getString('dailyHadith');
+  final cachedDate = prefs.getString('hadithDate');
+
+  // If cached hadith exists for today's date, use it
+  if (cachedHadith != null && cachedDate == currentDate) {
+    return _formatHadith(cachedHadith); // Format cached hadith
+  } else {
+    try {
+      // Fetch hadith from the API
+      final response = await http.get(
+          Uri.parse('https://random-hadith-generator.vercel.app/bukhari/'));
+
+      if (response.statusCode == 200) {
+        // Parse JSON response
+        final data = jsonDecode(response.body);
+
+        // Check if 'data' contains 'hadith_english' and is a valid string
+        if (data is Map &&
+            data['data'] is Map &&
+            data['data']['hadith_english'] is String) {
+          final hadith = data['data']['hadith_english'];
+
+          // Cache the hadith and today's date
+          await prefs.setString('dailyHadith', hadith);
+          await prefs.setString('hadithDate', currentDate);
+
+          return _formatHadith(hadith); // Return formatted hadith
+        } else {
+          return 'Hadith not available at this time.';
+        }
+      } else {
+        return 'Error: (Status code: ${response.statusCode}).';
+      }
+    } catch (e) {
+      return 'Network error: Unable to fetch hadith.';
+    }
+  }
+}
+
+String _formatHadith(String hadith) {
+  // Remove any extra whitespace and newlines, replacing them with a single space
+  final cleanedHadith = hadith.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return cleanedHadith;
 }
 
 final salahTimesProvider =
