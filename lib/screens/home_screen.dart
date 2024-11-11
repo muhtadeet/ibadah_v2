@@ -60,26 +60,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final qiyamTime = timeToSeconds(salahTimes.qiyam);
 
       int nextPrayerTime = 0;
+      int remainingSeconds = 0;
 
-      if (currentSeconds < fajrTime) {
-        nextPrayerTime = fajrTime;
-      } else if (currentSeconds < sunriseTime) {
-        nextPrayerTime = sunriseTime;
-      } else if (currentSeconds < dhuhrTime) {
-        nextPrayerTime = dhuhrTime;
-      } else if (currentSeconds < asrTime) {
-        nextPrayerTime = asrTime;
-      } else if (currentSeconds < maghribTime) {
-        nextPrayerTime = maghribTime;
-      } else if (currentSeconds < ishaTime) {
-        nextPrayerTime = ishaTime;
-      } else {
-        // If it's after Isha and Qiyam is next (crossing midnight)
-        nextPrayerTime = qiyamTime +
-            (24 * 3600); // Add 24 hours to handle the next day's Qiyam time
+      // If current time is after Isha and before midnight
+      if (currentSeconds >= ishaTime) {
+        // Calculate seconds until midnight
+        final secondsUntilMidnight = 24 * 3600 - currentSeconds;
+        // Add seconds from midnight until Qiyam
+        remainingSeconds = secondsUntilMidnight + qiyamTime;
       }
-
-      final remainingSeconds = nextPrayerTime - currentSeconds;
+      // If current time is after midnight but before Qiyam
+      else if (currentSeconds < qiyamTime) {
+        remainingSeconds = qiyamTime - currentSeconds;
+      }
+      // For all other prayer times
+      else {
+        if (currentSeconds < fajrTime) {
+          nextPrayerTime = fajrTime;
+        } else if (currentSeconds < sunriseTime) {
+          nextPrayerTime = sunriseTime;
+        } else if (currentSeconds < dhuhrTime) {
+          nextPrayerTime = dhuhrTime;
+        } else if (currentSeconds < asrTime) {
+          nextPrayerTime = asrTime;
+        } else if (currentSeconds < maghribTime) {
+          nextPrayerTime = maghribTime;
+        } else if (currentSeconds < ishaTime) {
+          nextPrayerTime = ishaTime;
+        }
+        remainingSeconds = nextPrayerTime - currentSeconds;
+      }
+      
       final remainingDuration = Duration(seconds: remainingSeconds);
 
       setState(() {
@@ -283,7 +294,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: const TextStyle(fontSize: 18),
                   ),
                   Text(
-                    'Hours                               Mins                                Secs',
+                    'Hours                                Mins                                Secs ',
                     style: TextStyle(
                       fontSize: 10,
                       color: colorScheme.tertiary,

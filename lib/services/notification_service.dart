@@ -30,7 +30,7 @@ class NotificationService {
     logger.i('Timezone initialized to Asia/Dhaka');
 
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/splash');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -52,22 +52,21 @@ class NotificationService {
   }
 
   Future<void> _requestNotificationPermission() async {
-  final status = await Permission.notification.status;
-  
-  if (status.isDenied || status.isPermanentlyDenied) {
-    final permissionStatus = await Permission.notification.request();
-    if (permissionStatus.isGranted) {
-      logger.i("Notification permission granted");
-    } else {
-      logger.w("Notification permission denied");
-    }
-  } else if (status.isGranted) {
-    logger.i("Notification permission already granted");
-  } else {
-    logger.w("Unable to determine notification permission status");
-  }
-}
+    final status = await Permission.notification.status;
 
+    if (status.isDenied || status.isPermanentlyDenied) {
+      final permissionStatus = await Permission.notification.request();
+      if (permissionStatus.isGranted) {
+        logger.i("Notification permission granted");
+      } else {
+        logger.w("Notification permission denied");
+      }
+    } else if (status.isGranted) {
+      logger.i("Notification permission already granted");
+    } else {
+      logger.w("Unable to determine notification permission status");
+    }
+  }
 
   Future<void> schedulePrayerNotifications(
       Map<String, String> prayerTimes) async {
@@ -79,7 +78,9 @@ class NotificationService {
       final format = DateFormat.jm();
 
       for (var entry in prayerTimes.entries) {
-        if (entry.key == 'location' || entry.value == "" || entry.value == "--:--") continue;
+        if (entry.key == 'location' ||
+            entry.value == "" ||
+            entry.value == "--:--") continue;
 
         try {
           final time = format.parse(entry.value);
@@ -102,10 +103,10 @@ class NotificationService {
               entry.key.substring(1).toLowerCase();
 
           await _notifications.zonedSchedule(
-            androidScheduleMode: AndroidScheduleMode.alarmClock,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             entry.key.hashCode,
             'Time for $prayerName',
-            'It\'s time for $prayerName prayer (${entry.value})',
+            'It\'s (${entry.value}). Time for $prayerName',
             scheduledDate,
             NotificationDetails(
               android: AndroidNotificationDetails(
@@ -114,9 +115,8 @@ class NotificationService {
                 channelDescription: 'Notifications for $prayerName prayer time',
                 importance: Importance.max,
                 priority: Priority.high,
-                enableLights: true,
                 enableVibration: true,
-                icon: '@mipmap/ic_launcher',
+                icon: '@drawable/splash',
                 channelShowBadge: true,
                 visibility: NotificationVisibility.public,
                 playSound: true,
@@ -155,7 +155,7 @@ class NotificationService {
           channelDescription: 'Test Channel Description',
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/splash',
         ),
         iOS: DarwinNotificationDetails(
           presentAlert: true,
@@ -173,5 +173,39 @@ class NotificationService {
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
+  }
+
+  Future<void> scheduleTestNotification() async {
+    // final now = DateTime.now();
+    final scheduledTime =
+        tz.TZDateTime.now(tz.local).add(const Duration(minutes: 2));
+
+    await _notifications.zonedSchedule(
+      999, // Test notification ID
+      'Test Scheduled Notification',
+      'This is a test for scheduled notification',
+      scheduledTime,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'test_scheduled_channel_id',
+          'Test Scheduled Channel',
+          channelDescription: 'Channel for scheduled test notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@drawable/splash',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exact,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    logger.i('Scheduled test notification for ${scheduledTime.toLocal()}');
   }
 }
