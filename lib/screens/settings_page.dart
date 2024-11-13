@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ibadah_v2/models/theme_provider.dart';
-// import 'package:ibadah_v2/services/notification_service.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -43,7 +42,7 @@ class SettingsPage extends ConsumerWidget {
                   value: themeModeOption,
                   onChanged: (ThemeModeOption? newMode) {
                     if (newMode != null) {
-                      ref.read(themeModeProvider.notifier).state = newMode;
+                      ref.read(themeModeProvider.notifier).setThemeMode(newMode); // Persist the selected mode
                     }
                   },
                   items: ThemeModeOption.values.map((ThemeModeOption mode) {
@@ -69,49 +68,21 @@ class SettingsPage extends ConsumerWidget {
                   value: colorScheme,
                   onChanged: (Color? newColor) {
                     if (newColor != null) {
-                      ref.read(colorProvider.notifier).state = newColor;
+                      final selectedColorName = predefinedColors.entries
+                          .firstWhere((entry) => entry.value == newColor)
+                          .key;
+                      ref.read(colorProvider.notifier).setColor(selectedColorName); // Persist the selected color
                     }
                   },
                   items: predefinedColors.entries.map((entry) {
                     return DropdownMenuItem<Color>(
                       value: entry.value,
-                      child:
-                          Text(entry.key, style: const TextStyle(fontSize: 16)),
+                      child: Text(entry.key, style: const TextStyle(fontSize: 16)),
                     );
                   }).toList(),
                 ),
               ],
             ),
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.center,
-            //   children: [
-            //     Padding(
-            //       padding: const EdgeInsets.symmetric(vertical: 40),
-            //       child: ElevatedButton(
-            //         onPressed: () {
-            //           // Call testNotification when the button is pressed
-            //           NotificationService().testNotification();
-            //         },
-            //         child: const Text('Send Test Notification'),
-            //       ),
-            //     ),
-            //   ],
-            // ),
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.center,
-            //   children: [
-            //     Padding(
-            //       padding: const EdgeInsets.symmetric(vertical: 10),
-            //       child: ElevatedButton(
-            //         onPressed: () {
-            //           // Call testNotification when the button is pressed
-            //           NotificationService().scheduleTestNotification();
-            //         },
-            //         child: const Text('Send Test Notification after a min'),
-            //       ),
-            //     ),
-            //   ],
-            // ),
           ],
         ),
       ),
